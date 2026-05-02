@@ -122,18 +122,55 @@
                 <i class="fa-solid fa-microchip text-cyan-400 mr-2"></i> Dados & Personalização
             </h2>
 
-            <div>
-                <label for="qr-text" class="block text-sm font-semibold text-cyan-300 mb-2 uppercase tracking-wide">Conteúdo ou Número (WhatsApp)</label>
-                <textarea id="qr-text" rows="3" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 glow-input transition-all resize-none" placeholder="https://ytalo.com ou 11999999999"></textarea>
+            <!-- Tabs de Seleção de Modo -->
+            <div class="flex gap-2 mb-2 bg-slate-800/50 p-1 rounded-xl">
+                <button id="tab-text" class="flex-1 py-2 rounded-lg bg-cyan-500/20 text-cyan-300 font-bold text-sm transition-all focus:outline-none">
+                    <i class="fa-solid fa-link mr-1"></i> Link / Texto
+                </button>
+                <button id="tab-wifi" class="flex-1 py-2 rounded-lg text-slate-400 hover:text-cyan-300 font-bold text-sm transition-all focus:outline-none">
+                    <i class="fa-solid fa-wifi mr-1"></i> Rede Wi-Fi
+                </button>
             </div>
 
-            <!-- Campo Exclusivo para WhatsApp (Aparece Mágicamente) -->
-            <div id="wa-message-container" class="hidden mt-2 pt-5 border-t border-slate-700/50 relative transition-all">
-                <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#050914] px-3 py-1 rounded-full text-[10px] text-green-400 font-bold tracking-widest uppercase flex items-center gap-2 border border-green-500/30 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
-                    <i class="fa-brands fa-whatsapp text-sm"></i> Modo WhatsApp
+            <!-- Formulário Texto / Link / WhatsApp -->
+            <div id="mode-text-container" class="flex flex-col gap-6 transition-all">
+                <div>
+                    <label for="qr-text" class="block text-sm font-semibold text-cyan-300 mb-2 uppercase tracking-wide">Conteúdo ou Número (WhatsApp)</label>
+                    <textarea id="qr-text" rows="3" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 glow-input transition-all resize-none" placeholder="https://ytalo.com ou 11999999999"></textarea>
                 </div>
-                <label for="wa-message" class="block text-sm font-semibold text-green-300 mb-2 uppercase tracking-wide">Mensagem Automática</label>
-                <textarea id="wa-message" rows="2" class="w-full bg-slate-900/80 border border-green-500/30 rounded-xl p-4 text-white placeholder-slate-500 glow-input transition-all resize-none focus:border-green-400 focus:shadow-[0_0_15px_rgba(74,222,128,0.3)]" placeholder="Ex: Olá, vim pelo seu QR Code..."></textarea>
+
+                <!-- Campo Exclusivo para WhatsApp (Aparece Mágicamente) -->
+                <div id="wa-message-container" class="hidden mt-2 pt-5 border-t border-slate-700/50 relative transition-all">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#050914] px-3 py-1 rounded-full text-[10px] text-green-400 font-bold tracking-widest uppercase flex items-center gap-2 border border-green-500/30 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
+                        <i class="fa-brands fa-whatsapp text-sm"></i> Modo WhatsApp
+                    </div>
+                    <label for="wa-message" class="block text-sm font-semibold text-green-300 mb-2 uppercase tracking-wide">Mensagem Automática</label>
+                    <textarea id="wa-message" rows="2" class="w-full bg-slate-900/80 border border-green-500/30 rounded-xl p-4 text-white placeholder-slate-500 glow-input transition-all resize-none focus:border-green-400 focus:shadow-[0_0_15px_rgba(74,222,128,0.3)]" placeholder="Ex: Olá, vim pelo seu QR Code..."></textarea>
+                </div>
+            </div>
+
+            <!-- Formulário Wi-Fi (Oculto por Padrão) -->
+            <div id="mode-wifi-container" class="hidden flex flex-col gap-4 transition-all">
+                <div>
+                    <label for="wifi-ssid" class="block text-sm font-semibold text-cyan-300 mb-2 uppercase tracking-wide">Nome da Rede (SSID) *</label>
+                    <input type="text" id="wifi-ssid" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 glow-input transition-all" placeholder="Nome do seu Wi-Fi">
+                </div>
+                <div>
+                    <label for="wifi-password" class="block text-sm font-semibold text-cyan-300 mb-2 uppercase tracking-wide">Senha *</label>
+                    <input type="text" id="wifi-password" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 glow-input transition-all" placeholder="Senha da rede">
+                </div>
+                <div class="relative">
+                    <label for="wifi-security" class="block text-sm font-semibold text-cyan-300 mb-2 uppercase tracking-wide">Tipo de Segurança *</label>
+                    <select id="wifi-security" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-4 text-white glow-input transition-all appearance-none cursor-pointer">
+                        <option value="WPA" selected>WPA/WPA2 (Padrão)</option>
+                        <option value="WEP">WEP</option>
+                        <option value="nopass">Nenhuma (Sem Senha)</option>
+                    </select>
+                    <!-- Ícone customizado pro select -->
+                    <div class="pointer-events-none absolute right-4 bottom-4 flex items-center text-cyan-400">
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4 mt-2">
@@ -209,8 +246,29 @@
         const waMessageInput = document.getElementById('wa-message');
         let isWhatsApp = false;
 
-        // Processa o texto final analisando se é WhatsApp
+        // --- VARIÁVEIS WI-FI ---
+        let currentMode = 'text';
+        const wifiSsid = document.getElementById('wifi-ssid');
+        const wifiPassword = document.getElementById('wifi-password');
+        const wifiSecurity = document.getElementById('wifi-security');
+
+        function escapeWifiString(str) {
+            return str.replace(/([\\;:,\"])/g, '\\$1');
+        }
+
+        // Processa o texto final analisando se é WhatsApp ou Wi-Fi
         function getFinalText() {
+            if (currentMode === 'wifi') {
+                const ssid = escapeWifiString(wifiSsid.value.trim());
+                const pass = escapeWifiString(wifiPassword.value);
+                const type = wifiSecurity.value;
+                
+                // Se não tiver nome, mostra QR vazio pra preview
+                if (!ssid) return "WIFI:S:Rede_Wi-Fi;T:WPA;P:;;";
+                
+                return `WIFI:S:${ssid};T:${type};P:${pass};;`;
+            }
+
             const rawText = qrInput.value.trim();
             let text = rawText || "https://ytalo.com";
             
@@ -257,9 +315,49 @@
             });
         }
 
+        // --- SISTEMA DE ABAS (Link vs Wi-Fi) ---
+        document.getElementById('tab-text').addEventListener('click', () => {
+            currentMode = 'text';
+            document.getElementById('tab-text').classList.add('bg-cyan-500/20', 'text-cyan-300');
+            document.getElementById('tab-text').classList.remove('text-slate-400');
+            document.getElementById('tab-wifi').classList.remove('bg-cyan-500/20', 'text-cyan-300');
+            document.getElementById('tab-wifi').classList.add('text-slate-400');
+            
+            document.getElementById('mode-text-container').classList.remove('hidden');
+            document.getElementById('mode-wifi-container').classList.add('hidden');
+            renderPreview();
+        });
+
+        document.getElementById('tab-wifi').addEventListener('click', () => {
+            currentMode = 'wifi';
+            document.getElementById('tab-wifi').classList.add('bg-cyan-500/20', 'text-cyan-300');
+            document.getElementById('tab-wifi').classList.remove('text-slate-400');
+            document.getElementById('tab-text').classList.remove('bg-cyan-500/20', 'text-cyan-300');
+            document.getElementById('tab-text').classList.add('text-slate-400');
+            
+            document.getElementById('mode-wifi-container').classList.remove('hidden');
+            document.getElementById('mode-text-container').classList.add('hidden');
+            renderPreview();
+        });
+
+        // Controle do campo de senha baseado na segurança
+        wifiSecurity.addEventListener('change', (e) => {
+            if (e.target.value === 'nopass') {
+                wifiPassword.disabled = true;
+                wifiPassword.classList.add('opacity-50', 'cursor-not-allowed');
+                wifiPassword.value = ''; // Limpa a senha
+            } else {
+                wifiPassword.disabled = false;
+                wifiPassword.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            renderPreview();
+        });
+
         // Escutadores de Eventos
         qrInput.addEventListener('input', checkInputType);
         waMessageInput.addEventListener('input', renderPreview);
+        wifiSsid.addEventListener('input', renderPreview);
+        wifiPassword.addEventListener('input', renderPreview);
         colorFg.addEventListener('input', renderPreview);
         colorBg.addEventListener('input', renderPreview);
 

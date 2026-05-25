@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QRcoder do Ytalo</title>
+    
+    <!-- Tailwind CSS (Estilização) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Bibliotecas OFICIAIS e estáveis para QR Code e PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <!-- FontAwesome para Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Biblioteca jsQR para leitura de QR Codes -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
+    <style>
+        /* Estilos customizados e Animações Futuristas */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #050914;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(6, 182, 212, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.08) 0%, transparent 50%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: padding 0.3s ease;
+        }
+
+        h1, .futuristic-font {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(6, 182, 212, 0.05);
+        }
+
+        .glow-input:focus {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
+            border-color: #06b6d4;
+            outline: none;
+        }
+
+        .btn-futuristic {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+
+        .btn-futuristic::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: all 0.4s ease;
+            z-index: -1;
+        }
+
+        .btn-futuristic:hover::before {
+            left: 100%;
+        }
+
+        .btn-futuristic:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px currentColor;
+        }
+
+        /* Input color customizado */
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 100%;
+            height: 48px;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            padding: 0;
+            background: none;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch {
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 0.5rem;
+        }
+        
+        /* Fundo do Preview */
+        #qr-preview-container {
+            background-image: linear-gradient(45deg, #1e293b 25%, transparent 25%), 
+                              linear-gradient(-45deg, #1e293b 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #1e293b 75%), 
+                              linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        /* Animação do Scanner Laser */
+        @keyframes scan {
+            0% { top: 0%; }
+            50% { top: 100%; }
+            100% { top: 0%; }
+        }
+        .scanner-line {
+            animation: scan 3s linear infinite;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center p-4 lg:p-8 min-h-screen" id="main-body">
+
+    <!-- Header -->
+    <header class="text-center mb-8 mt-4">
+        <h1 class="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 mb-2 tracking-wider filter drop-shadow-[0_0_10px_rgba(6,182,212,0.5)]">
+            QRcoder do Ytalo
+        </h1>
+    </header>
+
+    <!-- Seletor de Modo Global -->
+    <div class="flex gap-4 mb-8 bg-slate-800/40 p-1.5 rounded-xl border border-slate-700/30 max-w-md w-full relative z-10 animate-fade-in">
+        <button id="mode-generator-btn" class="flex-1 py-3 px-4 rounded-lg bg-cyan-500/20 text-cyan-300 font-bold text-sm md:text-base transition-all focus:outline-none flex items-center justify-center gap-2 border border-cyan-500/30">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Criar QR Code
+        </button>
+        <button id="mode-reader-btn" class="flex-1 py-3 px-4 rounded-lg text-slate-400 font-bold text-sm md:text-base transition-all focus:outline-none flex items-center justify-center gap-2 hover:text-purple-300">
+            <i class="fa-solid fa-camera"></i> Ler QR Code
+        </button>
+    </div>
+
+    <!-- Main Content -->
+    <main class="w-full max-w-5xl relative z-10">
+        
+        <!-- Seção do Gerador -->
+        <div id="generator-mode-container" class="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 transition-all duration-300">
+            <!-- Controles / Inputs -->
+            <section class="glass-panel rounded-2xl p-6 lg:p-8 flex flex-col gap-6 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                
+                <h2 class="text-2xl futuristic-font text-white border-b border-cyan-500/30 pb-2 mb-2">
+                    <i class="fa-solid fa-microchip text-cyan-400 mr-2"></i> Dados & Personalização
+                </h2>
+
+                <!-- Tabs de Seleção de Modo -->
+                <div class="flex gap-2 mb-2 bg-slate-800/50 p-1 rounded-xl">
+                    <button id="tab-text" class="flex-1 py-2 rounded-lg bg-cyan-500/20 text-cyan-300 font-bold text-sm transition-all focus:outline-none">
+                        <i class="fa-solid fa-link mr-1"></i> Link / Texto
+                    </button>
+                    <button id="tab-wifi" class="flex-1 py-2 rounded-lg text-slate-400 hover:text-cyan-300 font-bold text-sm transition-all focus:outline-none">
+                        <i class="fa-solid fa-wifi mr-1"></i> Rede Wi-Fi
+                    </button>
+                </div>
+
+                <!-- Formulário Texto / Link / WhatsApp -->
+                <div id="mode-text-container" class="flex flex-col gap-6 transition-all">
+                    <div>
+                        <label for="qr-text" class="block text-sm font-semibold text-cyan-300 mb-2 uppercase tracking-wide">Conteúdo ou Número (WhatsApp)</label>
+                        <textarea id="qr-text" rows="3" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 glow-input transition-all resize-none" placeholder="https://ytalo.com ou 11999999999"></textarea>
+                    </div>
+
+                    <!-- Campo Exclusivo para WhatsApp (Aparece Mágicamente) -->
+                    <div id="wa-message-container" class="hidden mt-2 pt-5 border-t border-slate-700/50 relative transition-all">
+                        <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#050914] px-3 py-1 rounded-full text-[10px] text-green-400 font-bold tracking-widest uppercase flex items-center gap-2 border border-green-500/30 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
+                            <i class="fa-brands fa-whatsapp text-sm"></i> Modo WhatsApp
+                        </div>
+                        <label for="wa-message" class="block text-sm font-semibold text-green-300 mb-2 uppercase tracking-wide">Mensagem Automática</label>
+                        <textarea id="wa-message" rows="2" class="w-full bg-slate-900/80 border border-green-500/30 rounded-xl p-4 text-white placeholder-slate-500 glow-input transition-all resize-none focus:border-green-400 focus:shadow-[0_0_15px_rgba(74,222,128,0.3)]" placeholder="Ex: Olá, vim pelo seu QR Code..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Formulário Wi-Fi (Oculto por Padrão) -->
+                <div id="mode-wifi-container" class="hidden flex flex-col gap-4 transition-all">
+                    <div>
+                        <label for="wifi-ssid" class="block text-sm font-semibold text-cyan-300 mb-2 uppercase tracking-wide">Nome da Rede (SSID) *</label>
+                        <input type="text" id="wifi-ssid" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 glow-input transition-all" placeholder="Nome do seu Wi-Fi">
+                    </div>
+                    <div>
+                        <label for="wifi-password" class="block text-sm font-semibold text-cyan-300 mb-2 uppercase tracking-wide">Senha *</label>
+                        <input type="text" id="wifi-password" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 glow-input transition-all" placeholder="Senha da rede">
+                    </div>
+                    <div class="relative">
+                        <label for="wifi-security" class="block text-sm font-semibold text-cyan-300 mb-2 uppercase tracking-wide">Tipo de Segurança *</label>
+                        <select id="wifi-security" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-4 text-white glow-input transition-all appearance-none cursor-pointer">
+                            <option value="WPA" selected>WPA/WPA2 (Padrão)</option>
+                            <option value="WEP">WEP</option>
+                            <option value="nopass">Nenhuma (Sem Senha)</option>
+                        </select>
+                        <!-- Ícone customizado pro select -->
+                        <div class="pointer-events-none absolute right-4 bottom-4 flex items-center text-cyan-400">
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mt-2">
+                    <div>
+                        <label class="block text-sm font-semibold text-cyan-300 mb-2 uppercase tracking-wide">Cor do QR Code</label>
+                        <input type="color" id="qr-color-fg" value="#06b6d4" class="glow-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-cyan-300 mb-2 uppercase tracking-wide">Cor de Fundo</label>
+                        <input type="color" id="qr-color-bg" value="#ffffff" class="glow-input">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Preview & Downloads -->
+            <section class="glass-panel rounded-2xl p-6 lg:p-8 flex flex-col items-center justify-center relative">
+                <div class="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -ml-10 -mb-10"></div>
+
+                <h2 class="text-2xl futuristic-font text-white border-b border-purple-500/30 w-full text-center pb-2 mb-6">
+                    <i class="fa-solid fa-qrcode text-purple-400 mr-2"></i> Pré-visualização
+                </h2>
+
+                <!-- Canvas Container -->
+                <div id="qr-preview-container" class="p-6 rounded-xl border-2 border-dashed border-slate-600 shadow-[0_0_20px_rgba(0,0,0,0.5)] mb-8 transition-all">
+                    <canvas id="qr-canvas" class="rounded shadow-lg bg-white"></canvas>
+                </div>
+
+                <!-- Botões de Download -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                    <button onclick="downloadQR('png')" class="btn-futuristic bg-transparent border border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 group">
+                        <i class="fa-regular fa-image group-hover:scale-110 transition-transform"></i>
+                        <span>Baixar PNG <br><small class="text-[10px] font-normal opacity-80">(Transparente)</small></span>
+                    </button>
+                    
+                    <button onclick="downloadQR('jpg')" class="btn-futuristic bg-transparent border border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 group">
+                        <i class="fa-solid fa-image group-hover:scale-110 transition-transform"></i>
+                        <span>Baixar JPG <br><small class="text-[10px] font-normal opacity-80">(Cor de Fundo)</small></span>
+                    </button>
+                    
+                    <button onclick="downloadQR('svg')" class="btn-futuristic bg-transparent border border-pink-400 text-pink-400 hover:bg-pink-400 hover:text-black font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 group">
+                        <i class="fa-solid fa-vector-square group-hover:scale-110 transition-transform"></i>
+                        <span>Baixar SVG <br><small class="text-[10px] font-normal opacity-80">(Vetor Perfeito)</small></span>
+                    </button>
+                    
+                    <button onclick="downloadQR('pdf')" class="btn-futuristic bg-transparent border border-rose-500 text-rose-500 hover:bg-rose-500 hover:text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 group">
+                        <i class="fa-solid fa-file-pdf group-hover:scale-110 transition-transform"></i>
+                        <span>Baixar PDF <br><small class="text-[10px] font-normal opacity-80">(Documento)</small></span>
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <!-- Seção do Leitor (Novo) -->
+        <div id="reader-mode-container" class="hidden w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 transition-all duration-300">
+            <!-- Coluna da Esquerda: Upload e Câmera -->
+            <section class="glass-panel rounded-2xl p-6 lg:p-8 flex flex-col gap-6 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                
+                <h2 class="text-2xl futuristic-font text-white border-b border-purple-500/30 pb-2 mb-2">
+                    <i class="fa-solid fa-expand text-purple-400 mr-2 animate-pulse"></i> Capturar QR Code
+                </h2>
+
+                <!-- Container Principal da Zona de Escaneamento/Upload -->
+                <div class="relative w-full min-h-[300px] flex flex-col items-center justify-center rounded-2xl overflow-hidden bg-slate-950/60 border border-slate-800">
+                    
+                    <!-- Área de Drag & Drop -->
+                    <div id="drop-zone" class="absolute inset-0 p-8 flex flex-col items-center justify-center text-center gap-4 cursor-pointer hover:bg-slate-900/40 transition-colors group">
+                        <div id="drop-zone-idle" class="flex flex-col items-center justify-center gap-4">
+                            <div class="w-20 h-20 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] transition-all">
+                                <i class="fa-solid fa-qrcode text-4xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-lg font-bold text-white mb-1">Arraste a imagem aqui</p>
+                                <p class="text-slate-400 text-sm">ou clique para escolher um arquivo</p>
+                            </div>
+                        </div>
+                        
+                        <div id="drop-zone-preview" class="hidden w-full h-full flex flex-col items-center justify-center gap-3">
+                            <img id="uploaded-qr-preview" class="max-h-[200px] rounded-lg border border-purple-500/30 shadow-lg object-contain bg-white/5 p-1">
+                            <p id="uploaded-file-name" class="text-slate-300 text-xs truncate max-w-[260px] font-semibold bg-slate-900 px-3 py-1.5 rounded-full border border-slate-800"></p>
+                        </div>
+                    </div>
+
+                    <!-- Container do Vídeo da Câmera (Oculto por padrão) -->
+                    <div id="camera-container" class="hidden absolute inset-0 w-full h-full bg-black flex items-center justify-center">
+                        <video id="webcam-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
+                        
+                        <!-- Scanner Laser Overlay -->
+                        <div class="absolute inset-x-0 h-0.5 bg-cyan-400 shadow-[0_0_10px_#22d3ee,0_0_20px_#22d3ee] scanner-line top-0 z-20"></div>
+                        <div class="absolute inset-0 border-4 border-dashed border-cyan-400/30 pointer-events-none z-10 m-4 rounded-lg"></div>
+                        
+                        <!-- Holographic scanning label -->
+                        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/80 backdrop-filter blur-md border border-cyan-500/30 text-[10px] text-cyan-400 font-bold tracking-widest uppercase py-1.5 px-4 rounded-full flex items-center gap-2 shadow-lg z-20 animate-pulse">
+                            <i class="fa-solid fa-circle text-[8px] text-red-500"></i> Escaneando Câmera
+                        </div>
+                    </div>
+                    
+                    <input type="file" id="qr-file-input" accept="image/*" class="hidden">
+                </div>
+
+                <!-- Botões de Ação do Leitor -->
+                <div class="grid grid-cols-2 gap-4">
+                    <button id="toggle-camera-btn" class="btn-futuristic py-3.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all">
+                        <i class="fa-solid fa-camera"></i>
+                        <span id="camera-btn-text">Escanear Câmera</span>
+                    </button>
+                    <button id="clear-reader-btn" class="btn-futuristic py-3.5 bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-300 font-bold rounded-xl flex items-center justify-center gap-2 transition-all">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        <span>Limpar</span>
+                    </button>
+                </div>
+                
+                <p class="text-xs text-slate-500 text-center">
+                    Dica: Se a imagem do QR Code estiver na sua galeria ou arquivos, arraste-a ou clique na área acima para carregar.
+                </p>
+            </section>
+
+            <!-- Coluna da Direita: Resultados -->
+            <section id="reader-result-panel" class="glass-panel rounded-2xl p-6 lg:p-8 flex flex-col justify-center relative min-h-[380px] overflow-hidden">
+                <div class="absolute bottom-0 left-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl -ml-10 -mb-10"></div>
+                
+                <h2 class="text-2xl futuristic-font text-white border-b border-cyan-500/30 pb-2 mb-6">
+                    <i class="fa-solid fa-square-poll-vertical text-cyan-400 mr-2"></i> Resultado da Leitura
+                </h2>
+
+                <!-- Estado Inicial: Vazio -->
+                <div id="reader-state-empty" class="flex flex-col items-center justify-center text-center gap-4 py-8">
+                    <i class="fa-solid fa-circle-nodes text-5xl text-purple-500/30 animate-spin" style="animation-duration: 15s;"></i>
+                    <div class="max-w-xs">
+                        <h3 class="text-lg font-bold text-slate-300 mb-1">Aguardando QR Code</h3>
+                        <p class="text-slate-500 text-xs">Arraste uma imagem, escolha um arquivo ou ligue a câmera para ver os dados decodificados.</p>
+                    </div>
+                </div>
+
+                <!-- Estado de Erro -->
+                <div id="reader-state-error" class="hidden flex flex-col items-center justify-center text-center gap-4 py-8">
+                    <div class="w-16 h-16 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-400 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+                        <i class="fa-solid fa-circle-exclamation text-3xl"></i>
+                    </div>
+                    <div class="max-w-xs">
+                        <h3 class="text-lg font-bold text-rose-400 mb-1">Decodificação Falhou</h3>
+                        <p id="reader-error-text" class="text-slate-400 text-xs">Não encontramos nenhum QR Code válido. Verifique a nitidez e tente novamente.</p>
+                    </div>
+                </div>
+
+                <!-- Estado de Sucesso: Wi-Fi -->
+                <div id="reader-state-wifi" class="hidden flex flex-col gap-5">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs px-3 py-1 rounded-full uppercase font-bold tracking-widest flex items-center gap-1.5 shadow-[0_0_10px_rgba(16,185,129,0.15)]">
+                            <i class="fa-solid fa-wifi animate-pulse"></i> Wi-Fi Encontrado
+                        </span>
+                    </div>
+
+                    <div class="flex flex-col gap-4">
+                        <!-- SSID -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-cyan-300 mb-1.5 uppercase tracking-wide">Nome da Rede (SSID)</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="reader-wifi-ssid" readonly class="flex-1 bg-slate-900/80 border border-slate-700/50 rounded-xl px-4 py-3 text-white font-semibold text-sm glow-input" value="">
+                                <button id="copy-wifi-ssid-btn" class="px-4 bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 hover:text-white rounded-xl transition-all border border-cyan-500/30 flex items-center justify-center" title="Copiar Nome da Rede">
+                                    <i class="fa-regular fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Senha -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-cyan-300 mb-1.5 uppercase tracking-wide">Senha do Wi-Fi</label>
+                            <div class="flex gap-2">
+                                <div class="relative flex-1">
+                                    <input type="password" id="reader-wifi-pass" readonly class="w-full bg-slate-900/80 border border-slate-700/50 rounded-xl pl-4 pr-12 py-3 text-white font-semibold text-sm glow-input" value="">
+                                    <button id="toggle-wifi-pass-btn" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-cyan-300 transition-colors">
+                                        <i id="reader-wifi-pass-icon" class="fa-regular fa-eye-slash"></i>
+                                    </button>
+                                </div>
+                                <button id="copy-wifi-pass-btn" class="px-4 bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 hover:text-white rounded-xl transition-all border border-cyan-500/30 flex items-center justify-center" title="Copiar Senha">
+                                    <i class="fa-regular fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Segurança -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-cyan-300 mb-1.5 uppercase tracking-wide">Tipo de Segurança</label>
+                            <div class="bg-slate-900/50 border border-slate-800 rounded-xl px-4 py-3 text-slate-300 text-sm font-semibold flex items-center gap-2">
+                                <i class="fa-solid fa-lock text-cyan-400 text-xs"></i>
+                                <span id="reader-wifi-sec">WPA/WPA2</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dica -->
+                    <div class="bg-slate-900/40 rounded-xl p-4 border border-slate-800 text-xs text-slate-400 flex flex-col gap-2">
+                        <p class="font-bold text-white flex items-center gap-1.5 text-sm">
+                            <i class="fa-solid fa-circle-info text-cyan-400"></i> Como conectar:
+                        </p>
+                        <ol class="list-decimal list-inside space-y-1 text-slate-300">
+                            <li>Clique no botão ao lado da <strong class="text-cyan-300">Senha</strong> para copiá-la.</li>
+                            <li>Abra a lista de Wi-Fi do seu celular ou PC.</li>
+                            <li>Selecione a rede <span id="reader-wifi-ssid-hint" class="font-bold text-white underline decoration-cyan-400"></span>.</li>
+                            <li>Cole a senha no campo correspondente e conecte-se!</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- Estado de Sucesso: Texto Geral / Links -->
+                <div id="reader-state-text" class="hidden flex flex-col gap-5">
+                    <div class="flex items-center gap-2">
+                        <span id="reader-text-badge" class="bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-xs px-3 py-1 rounded-full uppercase font-bold tracking-widest flex items-center gap-1.5 shadow-[0_0_10px_rgba(6,182,212,0.15)]">
+                            <i class="fa-solid fa-align-left animate-pulse"></i> Texto / Link Detectado
+                        </span>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-semibold text-cyan-300 mb-1.5 uppercase tracking-wide">Conteúdo Decodificado</label>
+                        <textarea id="reader-text-output" readonly rows="5" class="w-full bg-slate-900/80 border border-slate-700/50 rounded-xl p-4 text-white placeholder-slate-500 glow-input transition-all resize-none font-mono text-sm leading-relaxed"></textarea>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <button id="copy-text-btn" class="flex-1 py-3 bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 hover:text-white font-bold rounded-xl transition-all border border-cyan-500/30 flex items-center justify-center gap-2 text-sm">
+                            <i class="fa-regular fa-copy"></i> Copiar Conteúdo
+                        </button>
+                        
+                        <a id="open-link-btn" href="#" target="_blank" class="hidden flex-1 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all flex items-center justify-center gap-2 text-sm">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Link
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </div>
+        
+    </main>
+
+    <!-- Espaço Publicitário Minimalista (Abaixo do conteúdo) -->
+    <div class="w-full max-w-5xl mt-12 mb-6 flex flex-col items-center justify-center relative z-10">
+        <div class="flex items-center gap-2 mb-2 opacity-50">
+            <i class="fa-solid fa-satellite-dish text-[12px] text-cyan-400 animate-pulse"></i>
+        </div>
+        <div id="ad-wrapper" class="glass-panel w-full max-w-[320px] md:max-w-[728px] min-h-[90px] rounded-xl flex items-center justify-center overflow-hidden border-slate-700/50">
+            <!-- Container do anúncio injetado pelo JS -->
+        </div>
+    </div>
+
+    <script>
+        // --- 1. LÓGICA DO QR CODE E WHATSAPP ---
+        
+        const qrInput = document.getElementById('qr-text');
+        const colorFg = document.getElementById('qr-color-fg');
+        const colorBg = document.getElementById('qr-color-bg');
+        const canvas = document.getElementById('qr-canvas');
+        
+        const waMessageContainer = document.getElementById('wa-message-container');
+        const waMessageInput = document.getElementById('wa-message');
+        let isWhatsApp = false;
+
+        // --- VARIÁVEIS WI-FI ---
+        let currentMode = 'text';
+        const wifiSsid = document.getElementById('wifi-ssid');
+        const wifiPassword = document.getElementById('wifi-password');
+        const wifiSecurity = document.getElementById('wifi-security');
+
+        function escapeWifiString(str) {
+            return str.replace(/([\\;:,\"])/g, '\\$1');
+        }
+
+        // Processa o texto final analisando se é WhatsApp ou Wi-Fi
+        function getFinalText() {
+            if (currentMode === 'wifi') {
+                const ssid = escapeWifiString(wifiSsid.value.trim());
+                const pass = escapeWifiString(wifiPassword.value);
+                const type = wifiSecurity.value;
+                
+                // Se não tiver nome, mostra QR vazio pra preview
+                if (!ssid) return "WIFI:S:Rede_Wi-Fi;T:WPA;P:;;";
+                
+                return `WIFI:S:${ssid};T:${type};P:${pass};;`;
+            }
+
+            const rawText = qrInput.value.trim();
+            let text = rawText || "https://ytalo.com";
+            
+            if (isWhatsApp) {
+                // Limpa o número de telefone (remove espaços, traços, parênteses)
+                const cleanPhone = rawText.replace(/[\s\-\(\)\+]/g, '');
+                const msg = encodeURIComponent(waMessageInput.value.trim());
+                text = `https://wa.me/${cleanPhone}${msg ? '?text=' + msg : ''}`;
+            }
+            return text;
+        }
+
+        // Verifica se o usuário digitou um número de telefone
+        function checkInputType() {
+            const text = qrInput.value.trim();
+            const cleanText = text.replace(/[\s\-\(\)\+]/g, '');
+            
+            // Regra: Se tem entre 10 e 15 caracteres e SÓ possui números, consideramos telefone
+            if (cleanText.length >= 10 && cleanText.length <= 15 && /^\d+$/.test(cleanText)) {
+                isWhatsApp = true;
+                waMessageContainer.classList.remove('hidden');
+            } else {
+                isWhatsApp = false;
+                waMessageContainer.classList.add('hidden');
+            }
+            renderPreview();
+        }
+
+        // Renderiza a pré-visualização ao vivo
+        function renderPreview() {
+            // Se o QRCode não carregar por erro da rede, evitamos quebrar o JS
+            if (typeof QRCode === 'undefined') return;
+
+            const text = getFinalText();
+            const fg = colorFg.value;
+            const bg = colorBg.value;
+
+            QRCode.toCanvas(canvas, text, {
+                width: 280,
+                margin: 2,
+                color: { dark: fg, light: bg }
+            }, function (error) {
+                if (error) console.error("Erro ao gerar preview: ", error);
+            });
+        }
+
+        // --- SISTEMA DE ABAS (Link vs Wi-Fi) ---
+        document.getElementById('tab-text').addEventListener('click', () => {
+            currentMode = 'text';
+            document.getElementById('tab-text').classList.add('bg-cyan-500/20', 'text-cyan-300');
+            document.getElementById('tab-text').classList.remove('text-slate-400');
+            document.getElementById('tab-wifi').classList.remove('bg-cyan-500/20', 'text-cyan-300');
+            document.getElementById('tab-wifi').classList.add('text-slate-400');
+            
+            document.getElementById('mode-text-container').classList.remove('hidden');
+            document.getElementById('mode-wifi-container').classList.add('hidden');
+            renderPreview();
+        });
+
+        document.getElementById('tab-wifi').addEventListener('click', () => {
+            currentMode = 'wifi';
+            document.getElementById('tab-wifi').classList.add('bg-cyan-500/20', 'text-cyan-300');
+            document.getElementById('tab-wifi').classList.remove('text-slate-400');
+            document.getElementById('tab-text').classList.remove('bg-cyan-500/20', 'text-cyan-300');
+            document.getElementById('tab-text').classList.add('text-slate-400');
+            
+            document.getElementById('mode-wifi-container').classList.remove('hidden');
+            document.getElementById('mode-text-container').classList.add('hidden');
+            renderPreview();
+        });
+
+        // Controle do campo de senha baseado na segurança
+        wifiSecurity.addEventListener('change', (e) => {
+            if (e.target.value === 'nopass') {
+                wifiPassword.disabled = true;
+                wifiPassword.classList.add('opacity-50', 'cursor-not-allowed');
+                wifiPassword.value = ''; // Limpa a senha
+            } else {
+                wifiPassword.disabled = false;
+                wifiPassword.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            renderPreview();
+        });
+
+        // Escutadores de Eventos
+        qrInput.addEventListener('input', checkInputType);
+        waMessageInput.addEventListener('input', renderPreview);
+        wifiSsid.addEventListener('input', renderPreview);
+        wifiPassword.addEventListener('input', renderPreview);
+        colorFg.addEventListener('input', renderPreview);
+        colorBg.addEventListener('input', renderPreview);
+
+        // Inicializa o preview na abertura
+        setTimeout(renderPreview, 500); 
+
+        // --- 2. LÓGICA DE DOWNLOADS (CORRIGIDA) ---
+        function downloadQR(type) {
+            if (typeof QRCode === 'undefined') {
+                alert("A biblioteca geradora ainda está carregando, aguarde 1 segundo!");
+                return;
+            }
+
+            const text = getFinalText();
+            const fg = colorFg.value;
+            const bg = colorBg.value;
+
+            if (type === 'png') {
+                // PNG Transparente
+                QRCode.toDataURL(text, { type: 'image/png', width: 1024, margin: 2, color: { dark: fg, light: '#00000000' } }, function (err, url) {
+                    if (err) return console.error(err);
+                    triggerDownload(url, 'qrcoder_ytalo.png');
+                });
+            } 
+            else if (type === 'jpg') {
+                // JPG (Desenhamos em um canvas temporário pra garantir que o fundo customizado apareça, sem transparência)
+                const tempCanvas = document.createElement('canvas');
+                QRCode.toCanvas(tempCanvas, text, { width: 1024, margin: 2, color: { dark: fg, light: bg } }, function (err) {
+                    if (err) return console.error(err);
+                    const url = tempCanvas.toDataURL('image/jpeg', 1.0);
+                    triggerDownload(url, 'qrcoder_ytalo.jpg');
+                });
+            }
+            else if (type === 'svg') {
+                // SVG Vetorizável
+                QRCode.toString(text, { type: 'svg', width: 1024, margin: 2, color: { dark: fg, light: bg } }, function (err, string) {
+                    if (err) return console.error(err);
+                    const blob = new Blob([string], { type: 'image/svg+xml;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    triggerDownload(url, 'qrcoder_ytalo.svg');
+                });
+            }
+            else if (type === 'pdf') {
+                // PDF Documento
+                const tempCanvas = document.createElement('canvas');
+                QRCode.toCanvas(tempCanvas, text, { width: 1024, margin: 2, color: { dark: fg, light: bg } }, function (err) {
+                    if (err) return console.error(err);
+                    const url = tempCanvas.toDataURL('image/png');
+                    
+                    if(typeof window.jspdf === 'undefined') {
+                        alert("Biblioteca PDF carregando, tente novamente!");
+                        return;
+                    }
+
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                    
+                    doc.setFontSize(22);
+                    doc.text("QRcoder do Ytalo", 105, 20, { align: "center" });
+                    doc.setFontSize(10);
+                    // Mostra o link gerado (resumido se for muito longo)
+                    let textExibicao = text.substring(0, 70) + (text.length > 70 ? '...' : '');
+                    doc.text(textExibicao, 105, 30, { align: "center" });
+                    
+                    // Adiciona a imagem QR
+                    doc.addImage(url, 'PNG', 45, 40, 120, 120);
+                    doc.save('qrcoder_ytalo.pdf');
+                });
+            }
+        }
+
+        function triggerDownload(url, filename) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // --- 3. LÓGICA DO ESPAÇO PUBLICITÁRIO (Minimalista e Refresh) ---
+        
+        function loadAd() {
+            const adWrapper = document.getElementById('ad-wrapper');
+            if (!adWrapper) return;
+            adWrapper.innerHTML = ''; // Limpa o anúncio anterior
+            
+            // Recria a div alvo exigida pelo seu script
+            const adContainer = document.createElement('div');
+            adContainer.id = 'container-ae6aa2a13aff747c67b357b6561d5ede';
+            adWrapper.appendChild(adContainer);
+
+            // Remove o script antigo do body (para não acumular a cada 4 min)
+            const oldScript = document.getElementById('ad-script-invoke');
+            if (oldScript) {
+                oldScript.remove();
+            }
+
+            // Injeta o novo script diretamente na página
+            const script = document.createElement('script');
+            script.id = 'ad-script-invoke';
+            script.async = true;
+            script.dataset.cfasync = 'false';
+            script.src = 'https://pl29129303.profitablecpmratenetwork.com/ae6aa2a13aff747c67b357b6561d5ede/invoke.js';
+            document.body.appendChild(script);
+        }
+
+        // Carrega o anúncio na primeira vez
+        loadAd();
+
+        // Configura o Refresh Automático a cada 4 Minutos (240.000 ms)
+        setInterval(loadAd, 240000);
+
+
+        // --- 4. LÓGICA DO LEITOR DE QR CODE (NOVA) ---
+
+        // Configuração de Toggles Globais de Modo (Gerador vs Leitor)
+        const modeGenBtn = document.getElementById('mode-generator-btn');
+        const modeReadBtn = document.getElementById('mode-reader-btn');
+        const genContainer = document.getElementById('generator-mode-container');
+        const readContainer = document.getElementById('reader-mode-container');
+
+        modeGenBtn.addEventListener('click', () => {
+            stopWebcam();
+            modeGenBtn.className = "flex-1 py-3 px-4 rounded-lg bg-cyan-500/20 text-cyan-300 font-bold text-sm md:text-base transition-all focus:outline-none flex items-center justify-center gap-2 border border-cyan-500/30";
+            modeReadBtn.className = "flex-1 py-3 px-4 rounded-lg text-slate-400 font-bold text-sm md:text-base transition-all focus:outline-none flex items-center justify-center gap-2 hover:text-purple-300";
+            
+            genContainer.classList.remove('hidden');
+            readContainer.classList.add('hidden');
+            renderPreview();
+        });
+
+        modeReadBtn.addEventListener('click', () => {
+            modeGenBtn.className = "flex-1 py-3 px-4 rounded-lg text-slate-400 font-bold text-sm md:text-base transition-all focus:outline-none flex items-center justify-center gap-2 hover:text-cyan-300";
+            modeReadBtn.className = "flex-1 py-3 px-4 rounded-lg bg-purple-500/20 text-purple-300 font-bold text-sm md:text-base transition-all focus:outline-none flex items-center justify-center gap-2 border border-purple-500/30";
+            
+            genContainer.classList.add('hidden');
+            readContainer.classList.remove('hidden');
+            clearReader();
+        });
+
+        // Configurações do Leitor (Upload / Câmera)
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('qr-file-input');
+        
+        dropZone.addEventListener('click', () => {
+            if (!isWebcamScanning) fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+
+        // Prevenção de comportamentos padrão do Drag & Drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        // Highlight do Drag Over
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                if (isWebcamScanning) return;
+                dropZone.classList.add('border-purple-400', 'bg-purple-500/10');
+                dropZone.classList.remove('border-purple-500/30', 'bg-slate-900/40');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('border-purple-400', 'bg-purple-500/10');
+                dropZone.classList.add('border-purple-500/30', 'bg-slate-900/40');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            if (isWebcamScanning) return;
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                handleFile(file);
+            }
+        });
+
+        function handleFile(file) {
+            stopWebcam();
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    document.getElementById('drop-zone-idle').classList.add('hidden');
+                    document.getElementById('drop-zone-preview').classList.remove('hidden');
+                    document.getElementById('uploaded-qr-preview').src = event.target.result;
+                    document.getElementById('uploaded-file-name').textContent = file.name;
+                    document.getElementById('clear-reader-btn').classList.remove('hidden');
+                    decodeImage(img);
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function decodeImage(img) {
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
+            tempCtx.drawImage(img, 0, 0);
+            
+            try {
+                const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                if (typeof jsQR !== 'undefined') {
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    if (code) {
+                        processDecodedData(code.data);
+                    } else {
+                        showReaderError("Nenhum QR Code foi encontrado nesta imagem. Tente uma foto mais nítida ou aproximada.");
+                    }
+                } else {
+                    showReaderError("Erro: Biblioteca jsQR não carregada. Tente atualizar a página.");
+                }
+            } catch (err) {
+                console.error("Erro ao ler pixels do canvas:", err);
+                showReaderError("Não foi possível processar a imagem. Certifique-se de usar um arquivo local válido.");
+            }
+        }
+
+        // Variáveis de Controle da Câmera
+        let webcamStream = null;
+        let webcamAnimationId = null;
+        let isWebcamScanning = false;
+        const scanCanvas = document.createElement('canvas');
+        const scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
+
+        function toggleWebcam() {
+            const btn = document.getElementById('toggle-camera-btn');
+            const btnText = document.getElementById('camera-btn-text');
+            const cameraContainer = document.getElementById('camera-container');
+            const dropZone = document.getElementById('drop-zone');
+
+            if (isWebcamScanning) {
+                stopWebcam();
+            } else {
+                clearReader();
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                    .then(stream => {
+                        webcamStream = stream;
+                        const video = document.getElementById('webcam-video');
+                        video.srcObject = stream;
+                        video.onloadedmetadata = () => video.play();
+
+                        cameraContainer.classList.remove('hidden');
+                        dropZone.classList.add('hidden');
+                        
+                        btnText.textContent = "Parar Câmera";
+                        btn.classList.add('from-red-600', 'to-rose-600', 'shadow-[0_0_15px_rgba(220,38,38,0.3)]');
+                        btn.classList.remove('from-purple-600', 'to-pink-600', 'shadow-[0_0_15px_rgba(168,85,247,0.3)]');
+
+                        isWebcamScanning = true;
+                        webcamAnimationId = requestAnimationFrame(scanWebcamFrame);
+                    })
+                    .catch(err => {
+                        console.error("Erro ao acessar câmera: ", err);
+                        alert("Não foi possível acessar a câmera. Verifique as permissões de privacidade do seu navegador.");
+                    });
+            }
+        }
+
+        function stopWebcam() {
+            const btn = document.getElementById('toggle-camera-btn');
+            const btnText = document.getElementById('camera-btn-text');
+            const cameraContainer = document.getElementById('camera-container');
+            const dropZone = document.getElementById('drop-zone');
+
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+            }
+            if (webcamAnimationId) {
+                cancelAnimationFrame(webcamAnimationId);
+                webcamAnimationId = null;
+            }
+
+            isWebcamScanning = false;
+            cameraContainer.classList.add('hidden');
+            dropZone.classList.remove('hidden');
+
+            btnText.textContent = "Escanear Câmera";
+            btn.classList.remove('from-red-600', 'to-rose-600', 'shadow-[0_0_15px_rgba(220,38,38,0.3)]');
+            btn.classList.add('from-purple-600', 'to-pink-600', 'shadow-[0_0_15px_rgba(168,85,247,0.3)]');
+
+            const video = document.getElementById('webcam-video');
+            video.srcObject = null;
+        }
+
+        function scanWebcamFrame() {
+            if (!isWebcamScanning) return;
+            const video = document.getElementById('webcam-video');
+            
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                scanCanvas.width = video.videoWidth;
+                scanCanvas.height = video.videoHeight;
+                scanCtx.drawImage(video, 0, 0, scanCanvas.width, scanCanvas.height);
+                const imageData = scanCtx.getImageData(0, 0, scanCanvas.width, scanCanvas.height);
+                
+                if (typeof jsQR !== 'undefined') {
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    if (code) {
+                        processDecodedData(code.data);
+                        stopWebcam();
+                        return; // Para o loop
+                    }
+                }
+            }
+            webcamAnimationId = requestAnimationFrame(scanWebcamFrame);
+        }
+
+        // Limpeza Completa da Interface do Leitor
+        function clearReader() {
+            stopWebcam();
+            fileInput.value = '';
+            document.getElementById('drop-zone-idle').classList.remove('hidden');
+            document.getElementById('drop-zone-preview').classList.add('hidden');
+            document.getElementById('uploaded-qr-preview').src = '';
+            document.getElementById('uploaded-file-name').textContent = '';
+            document.getElementById('clear-reader-btn').classList.add('hidden');
+            
+            document.getElementById('reader-state-empty').classList.remove('hidden');
+            document.getElementById('reader-state-error').classList.add('hidden');
+            document.getElementById('reader-state-wifi').classList.add('hidden');
+            document.getElementById('reader-state-text').classList.add('hidden');
+        }
+
+        function showReaderError(msg) {
+            document.getElementById('reader-state-empty').classList.add('hidden');
+            document.getElementById('reader-state-wifi').classList.add('hidden');
+            document.getElementById('reader-state-text').classList.add('hidden');
+            
+            const errPanel = document.getElementById('reader-state-error');
+            const errText = document.getElementById('reader-error-text');
+            errText.textContent = msg;
+            errPanel.classList.remove('hidden');
+        }
+
+        // Parser Manual Robust da String WIFI
+        function parseWifiString(text) {
+            if (!text.startsWith('WIFI:')) return null;
+            const content = text.substring(5);
+            const result = { ssid: '', password: '', type: 'nopass', hidden: false };
+            let key = '';
+            let val = '';
+            let readingKey = true;
+            let escape = false;
+            
+            for (let i = 0; i < content.length; i++) {
+                const c = content[i];
+                if (escape) {
+                    val += c;
+                    escape = false;
+                } else if (c === '\\') {
+                    escape = true;
+                } else if (readingKey) {
+                    if (c === ':') {
+                        readingKey = false;
+                    } else {
+                        key += c;
+                    }
+                } else {
+                    if (c === ';') {
+                        if (key === 'S') result.ssid = val;
+                        else if (key === 'P') result.password = val;
+                        else if (key === 'T') result.type = val;
+                        else if (key === 'H') result.hidden = (val === 'true');
+                        
+                        key = '';
+                        val = '';
+                        readingKey = true;
+                    } else {
+                        val += c;
+                    }
+                }
+            }
+            return result;
+        }
+
+        // Processa Dados Decodificados do QR Code
+        function processDecodedData(data) {
+            document.getElementById('reader-state-empty').classList.add('hidden');
+            document.getElementById('reader-state-error').classList.add('hidden');
+            document.getElementById('reader-state-wifi').classList.add('hidden');
+            document.getElementById('reader-state-text').classList.add('hidden');
+
+            if (!data) {
+                showReaderError("O QR Code lido está vazio.");
+                return;
+            }
+
+            if (data.startsWith('WIFI:')) {
+                const wifiInfo = parseWifiString(data);
+                if (wifiInfo && wifiInfo.ssid) {
+                    document.getElementById('reader-wifi-ssid').value = wifiInfo.ssid;
+                    document.getElementById('reader-wifi-pass').value = wifiInfo.password || "";
+                    document.getElementById('reader-wifi-ssid-hint').textContent = wifiInfo.ssid;
+
+                    let securityText = "WPA/WPA2/WPA3 (Protegida)";
+                    if (wifiInfo.type === 'WEP') securityText = "WEP (Protegida)";
+                    else if (wifiInfo.type === 'nopass') securityText = "Rede Aberta (Sem Senha)";
+                    document.getElementById('reader-wifi-sec').textContent = securityText;
+
+                    document.getElementById('copy-wifi-ssid-btn').onclick = () => copyToClipboard(wifiInfo.ssid, 'copy-wifi-ssid-btn');
+                    document.getElementById('copy-wifi-pass-btn').onclick = () => copyToClipboard(wifiInfo.password || "", 'copy-wifi-pass-btn');
+
+                    const passInput = document.getElementById('reader-wifi-pass');
+                    const passIcon = document.getElementById('reader-wifi-pass-icon');
+                    passInput.type = 'password';
+                    passIcon.className = 'fa-regular fa-eye-slash';
+
+                    document.getElementById('toggle-wifi-pass-btn').onclick = () => {
+                        if (passInput.type === 'password') {
+                            passInput.type = 'text';
+                            passIcon.className = 'fa-regular fa-eye';
+                        } else {
+                            passInput.type = 'password';
+                            passIcon.className = 'fa-regular fa-eye-slash';
+                        }
+                    };
+
+                    document.getElementById('reader-state-wifi').classList.remove('hidden');
+                } else {
+                    displayAsText(data);
+                }
+            } else {
+                displayAsText(data);
+            }
+        }
+
+        function displayAsText(data) {
+            document.getElementById('reader-text-output').value = data;
+            document.getElementById('copy-text-btn').onclick = () => copyToClipboard(data, 'copy-text-btn');
+
+            const linkBtn = document.getElementById('open-link-btn');
+            const badge = document.getElementById('reader-text-badge');
+            
+            let isUrl = false;
+            try {
+                if (data.startsWith('http://') || data.startsWith('https://')) {
+                    isUrl = true;
+                }
+            } catch(e) {}
+
+            if (isUrl) {
+                linkBtn.href = data;
+                linkBtn.classList.remove('hidden');
+                badge.innerHTML = '<i class="fa-solid fa-link animate-pulse"></i> Link Detectado';
+                badge.className = "bg-blue-500/10 text-blue-400 border border-blue-500/30 text-xs px-3 py-1 rounded-full uppercase font-bold tracking-widest flex items-center gap-1.5 shadow-[0_0_10px_rgba(59,130,246,0.15)]";
+            } else {
+                linkBtn.classList.add('hidden');
+                badge.innerHTML = '<i class="fa-solid fa-align-left"></i> Texto Detectado';
+                badge.className = "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-xs px-3 py-1 rounded-full uppercase font-bold tracking-widest flex items-center gap-1.5 shadow-[0_0_10px_rgba(6,182,212,0.15)]";
+            }
+
+            document.getElementById('reader-state-text').classList.remove('hidden');
+        }
+
+        // Utilitário Global de Cópia
+        function copyToClipboard(text, buttonId) {
+            navigator.clipboard.writeText(text).then(() => {
+                showCopyFeedback(buttonId);
+            }).catch(err => {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.opacity = "0";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showCopyFeedback(buttonId);
+                } catch (err2) {
+                    console.error("Erro ao copiar: ", err2);
+                }
+                document.body.removeChild(textArea);
+            });
+        }
+
+        function showCopyFeedback(buttonId) {
+            const btn = document.getElementById(buttonId);
+            if (!btn) return;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i>';
+            btn.classList.add('bg-emerald-500/20', 'border-emerald-500/40');
+            btn.classList.remove('bg-cyan-500/20', 'border-cyan-500/30');
+
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('bg-emerald-500/20', 'border-emerald-500/40');
+                btn.classList.add('bg-cyan-500/20', 'border-cyan-500/30');
+            }, 2000);
+        }
+
+        // Ouvintes de Ação Global do Leitor
+        document.getElementById('toggle-camera-btn').addEventListener('click', toggleWebcam);
+        document.getElementById('clear-reader-btn').addEventListener('click', clearReader);
+
+    </script>
+</body>
+</html>

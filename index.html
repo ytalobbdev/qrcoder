@@ -429,16 +429,6 @@
         
     </main>
 
-    <!-- Espaço Publicitário Minimalista (Abaixo do conteúdo) -->
-    <div class="w-full max-w-5xl mt-12 mb-6 flex flex-col items-center justify-center relative z-10">
-        <div class="flex items-center gap-2 mb-2 opacity-50">
-            <i class="fa-solid fa-satellite-dish text-[12px] text-cyan-400 animate-pulse"></i>
-        </div>
-        <div id="ad-wrapper" class="glass-panel w-full max-w-[320px] md:max-w-[728px] min-h-[90px] rounded-xl flex items-center justify-center overflow-hidden border-slate-700/50">
-            <!-- Container do anúncio injetado pelo JS -->
-        </div>
-    </div>
-
     <script>
         // --- 1. LÓGICA DO QR CODE E WHATSAPP ---
         
@@ -643,41 +633,7 @@
             document.body.removeChild(a);
         }
 
-        // --- 3. LÓGICA DO ESPAÇO PUBLICITÁRIO (Minimalista e Refresh) ---
-        
-        function loadAd() {
-            const adWrapper = document.getElementById('ad-wrapper');
-            if (!adWrapper) return;
-            adWrapper.innerHTML = ''; // Limpa o anúncio anterior
-            
-            // Recria a div alvo exigida pelo seu script
-            const adContainer = document.createElement('div');
-            adContainer.id = 'container-ae6aa2a13aff747c67b357b6561d5ede';
-            adWrapper.appendChild(adContainer);
-
-            // Remove o script antigo do body (para não acumular a cada 4 min)
-            const oldScript = document.getElementById('ad-script-invoke');
-            if (oldScript) {
-                oldScript.remove();
-            }
-
-            // Injeta o novo script diretamente na página
-            const script = document.createElement('script');
-            script.id = 'ad-script-invoke';
-            script.async = true;
-            script.dataset.cfasync = 'false';
-            script.src = 'https://pl29129303.profitablecpmratenetwork.com/ae6aa2a13aff747c67b357b6561d5ede/invoke.js';
-            document.body.appendChild(script);
-        }
-
-        // Carrega o anúncio na primeira vez
-        loadAd();
-
-        // Configura o Refresh Automático a cada 4 Minutos (240.000 ms)
-        setInterval(loadAd, 240000);
-
-
-        // --- 4. LÓGICA DO LEITOR DE QR CODE (NOVA) ---
+        // --- 3. LÓGICA DO LEITOR DE QR CODE ---
 
         // Configuração de Toggles Globais de Modo (Gerador vs Leitor)
         const modeGenBtn = document.getElementById('mode-generator-btn');
